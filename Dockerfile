@@ -13,8 +13,8 @@ RUN conda install -y -c conda-forge xeus-cling=0.9.0
 RUN conda install -y -c conda-forge xwidgets
 RUN conda update conda
 
-RUN curl -o algoviz.tar.gz https://abbozza.informatik.uos.de/aud/jupyter/algoviz.tar.gz
-RUN tar xv -C "$HOME/miniconda3" -f algoviz.tar.gz
+COPY algoviz.tar.gz .
+RUN tar xv -C "$HOME/miniconda3" -f "$HOME/algoviz.tar.gz"
 
 RUN mkdir -p $HOME/AuD/jupyter
 
@@ -28,6 +28,6 @@ RUN chmod +x $HOME/miniconda3/bin/aud_patch
 
 EXPOSE 8888
 
-ADD start.sh /root/
+ADD start.sh .
 RUN ["chmod", "+x", "/root/start.sh"]
 ENTRYPOINT [ "/root/start.sh" ]
