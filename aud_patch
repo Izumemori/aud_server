@@ -1,0 +1,146 @@
+#!/bin/bash
+
+echo
+echo -e "\033[1mAuD Starter\033[0m"
+echo -e "\033[1m===========\033[0m"
+echo
+
+if [[ $1 != "" ]]; then
+    case $1 in
+        "--test") 
+            INFIX="/test";
+            ;;
+        default)
+            echo -e "\033[1m\033[31mUnknown option: $1\033[0m"
+            exit 1
+            ;;
+    esac
+fi
+
+
+function set_os() {
+    SERVER="http://abbozza.informatik.uos.de/aud/jupyter"
+    INFIX=""
+
+    ARCH=`uname -m`
+    SYSTEM=`uname -s`
+    OS="Linux"
+
+    if [[ $SYSTEM == "Darwin" ]]; then
+        echo -e "\033[1mRunning on MacOS\033[0m"
+        OS="MacOSX"
+    else
+        if [[ $WSL_DISTRO_NAME != "" ]]; then
+            echo -e "\033[1mRunning on WSL Ubuntu\033[0m"
+        else 
+            echo -e "\033[1mRunning on native Ubuntu\033[0m"
+        fi
+    fi
+    echo
+}
+
+function check_file() {
+    local_file=$1
+    remote_file=$2
+
+    pre=$(date +%s)
+
+    curl -o "$local_file" -z "$local_file" "$remote_file"
+
+    if [[ $OS == "MacOSX" ]]; then
+    #     modified=$(curl --silent --head "$remote_file" | grep Last-Modified | sed 's/^Last-Modified: .*, //' | tr -d '\r')
+    #     remote_ctime=$(date -j -f "%d %b %Y %T %Z" "$modified" +%s)
+        local_ctime=$(stat -f %m "$local_file")
+    else
+    #     modified=$(curl --silent --head "$remote_file" | grep Last-Modified | sed 's/^Last-Modified: //')
+    #     remote_ctime=$(date --date="$modified" +%s)
+        local_ctime=$(stat -c %z "$local_file")
+        local_ctime=$(date --date="$local_ctime" +%s)
+    fi
+
+    if [[ $local_ctime -gt $pre ]]; then
+        # Was downloaded
+        return 1
+    fi
+
+    # Local is newer
+    return 0 
+}
+
+set_os
+
+if [[ -e $HOME/.audrc ]]; then
+    . $HOME/.audrc
+else
+    echo -e "\033[1m\033[31mERROR: $HOME/.audrc does not exist!\033[0m"
+    exit 1
+fi
+
+
+echo -e "\033[1mAuD directory : $AUD_HOME\033[0m"
+echo -e "\033[1mAuD port : $AUD_PORT\033[0m"
+echo
+
+
+##
+## Checking if a new version of AlgoViz exists
+##
+check_file "$HOME/.aud/algoviz.tar.gz" "$SERVER$INFIX/algoviz.tar.gz"
+if [[ $? == 1 ]]; then
+    echo -e "\033[1mFound new version of algoviz\033[0m"
+    tar xz -C "$HOME/miniconda3" -f "$HOME/.aud/algoviz.tar.gz"
+    chmod +x "$HOME"/miniconda3/bin/aud*
+
+    if [[ $OS == "MacOSX" ]]; then
+        APP="$HOME/Applications"
+        cp -r "$HOME/miniconda3/etc/algoviz/macos/AuD.app.tar.gz" "$APP"
+        tar xf "$APP/AuD.app.tar.gz" -C "$APP"
+        cp "$HOME/miniconda3/etc/algoviz/macos/json.hpp" "$HOME/miniconda3/include/nlohmann/json.hpp"
+    fi
+fi
+
+##
+## Checking if new material exists
+##
+check_file "$HOME/.aud/aud-material.zip" "$SERVER$INFIX/aud-material.zip"
+if [[ $? == 1 ]]; then
+    echo -e "\033[1mFound new material\033[0m"
+
+    # Unlock
+    chmod -R u+w "$AUD_HOME"/*
+
+    unzip -o -d "$AUD_HOME" "$HOME/.aud/aud-material.zip"
+
+    # Lock
+    chmod -R -w "$AUD_HOME"/*
+    chmod -R u+w "$AUD_HOME"/myNotebooks
+    chmod -R u+w "$AUD_HOME"
+fi
+
+
+if [[ $WSL_DISTRO_NAME != "" ]]; then
+
+    echo -e "\033[1mRunning on Windows WSL\033[0m"
+    echo
+
+    cd "$AUD_HOME"
+    jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT
+
+else
+
+    if [[ $OS == "MacOSX" ]]; then
+        echo -e "\033[1mRunning on MacOS\033[0m"
+        echo
+
+        jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT        
+    else
+        echo -e "\033[1mRunning on native Linux\033[0m"
+        echo
+
+        if [[ `which x-terminal-emulator` != "" ]]; then
+            x-terminal-emulator -e jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT &
+        else
+            jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT --no-browser --ip=0.0.0.0 --allow-root
+        fi
+    fi
+fi
