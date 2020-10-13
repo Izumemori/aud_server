@@ -140,7 +140,7 @@ else
         if [[ `which x-terminal-emulator` != "" ]]; then
             x-terminal-emulator -e jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT &
         else
-            jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT --no-browser --ip=0.0.0.0 --allow-root
+            jupyter-notebook --notebook-dir="$AUD_HOME" --port=$AUD_PORT --no-browser --ip=0.0.0.0 --allow-root --NotebookApp.token='' --NotebookApp.password=''
         fi
     fi
 fi
