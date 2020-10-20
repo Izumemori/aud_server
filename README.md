@@ -6,7 +6,7 @@
 
     Für Ubuntu:
 
-        apt-get install docker
+        apt-get install docker.io
 
 1. Docker Image herunterladen:
 
