@@ -17,6 +17,7 @@ COPY algoviz.tar.gz .
 RUN tar xv -C "$HOME/miniconda3" -f "$HOME/algoviz.tar.gz"
 
 RUN mkdir -p $HOME/AuD/jupyter
+RUN mkdir -p $HOME/.aud
 
 RUN echo "AUD_HOME=$HOME/AuD/jupyter" > $HOME/.audrc
 RUN echo "AUD_PORT=8888" >> $HOME/.audrc
