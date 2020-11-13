@@ -1,12 +1,129 @@
 #!/bin/bash
 
+for i in $HOME/miniconda3/bin/*cos6* ; do 
+	j=`echo $i | sed 's/_cos6//g'`
+	ln -s $i $j > /dev/null 2>&1
+done
+
 echo
 echo -e "\033[1mAuD Starter\033[0m"
 echo -e "\033[1m===========\033[0m"
 echo
 
+## Show Info
+function show_info() {
+    echo -e "\033[1mSystem: $SYSTEM\033[0m"
+
+    # ping `echo $SERVER | sed 's/http://g'`
+    # if [[ $? == 0 ]]; then
+    #    echo -e "\033[1m\033[32m$SERVER is reachable\033[0m"
+    # else 
+    #    echo -e "\033[1m\033[31m$SERVER isn't reachable\033[0m"
+    # fi
+
+    echo
+
+    if [[ -e "$HOME/.audrc" ]]; then
+       echo -e "\033[1m\033[32m$HOME/.audrc exists\033[0m"
+    else 
+       echo -e "\033[1m\033[31m$HOME/.audrc doesn't exists\033[0m"
+    fi
+
+    if [[ -d "$HOME/.aud" ]]; then
+       echo -e "\033[1mContents of $HOME/.aud\033[0m"
+       ls -1 "$HOME/.aud"
+    else 
+       echo -e "\033[1m\033[31m$HOME/.aud doesn't exists\033[0m"
+    fi
+
+    echo
+
+    echo -e "\033[1mAUD_HOME: $AUD_HOME\033[0m"
+    echo -e "\033[1mAUD_PORT: $AUD_PORT\033[0m"
+
+    echo 
+
+    echo -e "\033[1mPath: $PATH\033[0m"
+
+    echo
+
+    if [[ `which curl` != "" ]]; then
+       echo -e "\033[1m\033[32mcurl is installed\033[0m"
+    else 
+       echo -e "\033[1m\033[31mcurl is not installed\033[0m"
+    fi
+
+    if [[ `which unzip` != "" ]]; then
+       echo -e "\033[1m\033[32munzip is installed\033[0m"
+    else 
+       echo -e "\033[1m\033[31munzip is not installed\033[0m"
+    fi
+
+    echo
+
+    SKIP="false"
+    if [[ `which conda` != "" ]]; then
+       echo -e "\033[1m\033[32m`which conda` found\033[0m"
+       echo -e "\033[1m\033[32m`python --version`\033[0m"
+    else 
+       echo -e "\033[1m\033[31mconda cannot be found\033[0m"
+       SKIP="true"
+    fi
+
+    echo
+
+    if [[ $SKIP == "false" ]]; then
+        if [[ `conda list  | grep notebook` != "" ]]; then
+            echo -e "\033[1m\033[32mPackage notebook is installed\033[0m"
+        else 
+            echo -e "\033[1m\033[31mPackage notebook is not installed\033[0m"
+        fi  
+
+        if [[ `conda list  | grep widgetsnbextension` != "" ]]; then
+            echo -e "\033[1m\033[32mPackage widgetsnbextension is installed\033[0m"
+        else 
+            echo -e "\033[1m\033[31mPackage widgetsnbextension is not installed\033[0m"
+        fi  
+
+        if [[ `conda list  | grep xeus-cling` != "" ]]; then
+            echo -e "\033[1m\033[32mPackage xeus-cling is installed\033[0m"
+        else 
+            echo -e "\033[1m\033[31mPackage xeus-cling is not installed\033[0m"
+        fi  
+
+        if [[ `conda list  | grep xwidgets` != "" ]]; then
+            echo -e "\033[1m\033[32mPackage xwidgets is installed\033[0m"
+        else 
+            echo -e "\033[1m\033[31mPackage xwidgets is not installed\033[0m"
+        fi  
+    fi
+
+    echo
+
+    if [[ -x "$HOME/miniconda3/bin/aud" ]]; then
+        echo -e "\033[1m\033[32m$HOME/miniconda3/bin/aud exists and is executable\033[0m"
+    else 
+        if [[ -e "$HOME/miniconda3/bin/aud" ]]; then
+           echo -e "\033[1m\033[31m$HOME/miniconda3/bin/aud is not executable\033[0m"
+        else 
+           echo -e "\033[1m\033[31m$HOME/miniconda3/bin/aud doesn't exist\033[0m"
+        fi
+    fi
+}
+
+
+
+FORCE=0
+
 if [[ $1 != "" ]]; then
     case $1 in
+        "--info")
+            show_info
+            exit 0
+            ;;
+        "--force")
+            FORCE=1
+            ;;
         "--test") 
             INFIX="/test";
             ;;
@@ -45,6 +162,10 @@ function check_file() {
 
     pre=$(date +%s)
 
+    if [[ $FORCE -eq 1 ]]; then
+        rm "$local_file"
+    fi
+
     curl -o "$local_file" -z "$local_file" "$remote_file"
 
     if [[ $OS == "MacOSX" ]]; then
@@ -58,19 +179,19 @@ function check_file() {
         local_ctime=$(date --date="$local_ctime" +%s)
     fi
 
-    if [[ $local_ctime -gt $pre ]]; then
+    if [[ $local_ctime -ge $pre ]]; then
         # Was downloaded
         return 1
     fi
 
     # Local is newer
-    return 0 
+    return 0
 }
 
 set_os
 
-if [[ -e $HOME/.audrc ]]; then
-    . $HOME/.audrc
+if [[ -e "$HOME/.audrc" ]]; then
+    . "$HOME/.audrc"
 else
     echo -e "\033[1m\033[31mERROR: $HOME/.audrc does not exist!\033[0m"
     exit 1
@@ -95,7 +216,7 @@ if [[ $? == 1 ]]; then
         APP="$HOME/Applications"
         cp -r "$HOME/miniconda3/etc/algoviz/macos/AuD.app.tar.gz" "$APP"
         tar xf "$APP/AuD.app.tar.gz" -C "$APP"
-        cp "$HOME/miniconda3/etc/algoviz/macos/json.hpp" "$HOME/miniconda3/include/nlohmann/json.hpp"
+        # cp "$HOME/miniconda3/etc/algoviz/macos/json.hpp" "$HOME/miniconda3/include/nlohmann/json.hpp"
     fi
 fi
 
@@ -108,6 +229,9 @@ if [[ $? == 1 ]]; then
 
     # Unlock
     chmod -R u+w "$AUD_HOME"/*
+
+    # Remove old material
+    rm -r "$AUD_HOME/lessons/"
 
     unzip -o -d "$AUD_HOME" "$HOME/.aud/aud-material.zip"
 
