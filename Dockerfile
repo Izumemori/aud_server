@@ -28,6 +28,8 @@ RUN chmod +x $HOME/miniconda3/bin/aud_patch
 
 EXPOSE 8888
 
+ADD ./jupyter_notebook_config.json .jupyter/
+
 ADD start.sh .
 RUN ["chmod", "+x", "/root/start.sh"]
 ENTRYPOINT [ "/root/start.sh" ]
